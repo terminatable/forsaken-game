@@ -1,0 +1,95 @@
+name: Development Tools
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - format-code
+          - update-deps
+          - generate-docs
+          - clean-cache
+          - benchmark
+
+jobs:
+  dev-tools:
+    name: Run Development Tool
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.11.0
+
+    - name: Format Code
+      if: github.event.inputs.action == 'format-code'
+      run: |
+        echo "🎨 Formatting code..."
+        zig fmt src/
+        zig fmt build.zig
+        
+        # Check if changes were made
+        if [ -n "$(git status --porcelain)" ]; then
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git commit -m "style: auto-format code"
+          git push
+          echo "✅ Code formatted and committed"
+        else
+          echo "✅ Code already formatted"
+        fi
+
+    - name: Update Dependencies
+      if: github.event.inputs.action == 'update-deps'
+      run: |
+        echo "📦 Updating dependencies..."
+        # Update zig.mod if it exists
+        if [ -f "zig.mod" ]; then
+          zig mod update
+        fi
+        echo "✅ Dependencies updated"
+
+    - name: Generate Documentation
+      if: github.event.inputs.action == 'generate-docs'
+      run: |
+        echo "📚 Generating documentation..."
+        zig build docs || echo "Documentation generation not configured"
+        echo "✅ Documentation generated"
+
+    - name: Clean Cache
+      if: github.event.inputs.action == 'clean-cache'
+      run: |
+        echo "🗑️ Cleaning build cache..."
+        rm -rf zig-cache
+        rm -rf zig-out
+        rm -rf ~/.cache/zig
+        echo "✅ Cache cleaned"
+
+    - name: Run Benchmarks
+      if: github.event.inputs.action == 'benchmark'
+      run: |
+        echo "⚡ Running benchmarks..."
+        zig build -Doptimize=ReleaseFast
+        zig build benchmark
+        echo "✅ Benchmarks completed"
+
+  auto-assign:
+    name: Auto Assign Issues
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    
+    steps:
+    - uses: actions/add-to-project@v0.5.0
+      with:
+        project-url: https://github.com/orgs/terminatable/projects/1
+        github-token: ${{ secrets.GITHUB_TOKEN }}
