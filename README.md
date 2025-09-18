@@ -1,203 +1,229 @@
-# Forsaken RPG
+# 🏰 Forsaken Game
 
-[![Zig Version](https://img.shields.io/badge/zig-0.15.1-orange)](https://ziglang.org/)
+[![CI/CD](https://github.com/terminatable/forsaken-game/actions/workflows/ci.yml/badge.svg)](https://github.com/terminatable/forsaken-game/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Game Status](https://img.shields.io/badge/status-demo-orange.svg)]()
+[![Zig Version](https://img.shields.io/badge/zig-0.11.0-orange.svg)](https://ziglang.org/)
+[![Issues](https://img.shields.io/github/issues/terminatable/forsaken-game)](https://github.com/terminatable/forsaken-game/issues)
 
-**Complete RPG showcase game demonstrating the full Artemis Engine ecosystem.**
+> A Rouge Lineage-inspired RPG with R6-style characters built on Artemis Engine, featuring procedural animations and physics-based combat.
 
-## ✨ What is Forsaken?
+## 🎮 Features
 
-Forsaken is a complete RPG built with the Artemis Engine ecosystem to demonstrate production-ready game development in Zig. It showcases:
+### Core Systems
+- **R6 Character System** - Six-part character bodies with procedural animations
+- **Physics-Based Combat** - Realistic combat with physics interactions
+- **Character Customization** - Deep customization options for appearance and abilities
+- **Procedural Animations** - Dynamic animation system that adapts to gameplay
 
-### 🏗️ Game Features
-
-- **⚔️ Combat System** - Turn-based combat with abilities and status effects
-- **🎆 Progression** - Character leveling, skill trees, and equipment
-- **🏯 Inventory** - Item management with crafting and trading
-- **🌍 World** - Explorable areas with NPCs and quests
-- **🎨 Reactive UI** - Dynamic interface with Artemis GUI
-- **🔌 Plugins** - Modular systems with hot-reloading
-
-### 🎥 Technical Showcase
-
-- **ECS Architecture** - Complex game systems built with Artemis Engine
-- **Reactive UI** - Game interface built with Artemis GUI
-- **Plugin System** - Modular features with Artemis Plugins
-- **Performance** - 60fps+ with hundreds of entities
-- **Memory Safety** - Zero crashes with Zig's safety guarantees
+### Planned Features
+- **Magic System** - Diverse spells and abilities
+- **Skill Progression** - Deep character development and specialization
+- **World Exploration** - Large, immersive game world
+- **Multiplayer Support** - Online cooperative and competitive gameplay
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Zig 0.15.1+**
-- **Git** for cloning
+- [Zig 0.11.0+](https://ziglang.org/download/)
+- Git
+- OpenGL 3.3+ compatible graphics card
 
-### Play the Game
+### Installation
 
+1. Clone the repository:
 ```bash
-# Clone and play
 git clone https://github.com/terminatable/forsaken-game.git
 cd forsaken-game
-
-# Run the game
-zig build run
-
-# Run with debug info
-zig build run -- --debug
-
-# Run specific game modes
-zig build run -- --mode=combat-demo
-zig build run -- --mode=ui-showcase
 ```
 
-### Development Build
+2. Set up asset directories:
+```bash
+zig build setup
+```
+
+3. Build and run:
+```bash
+zig build run
+```
+
+### Development Mode
+
+For development with hot reloading and debug output:
+```bash
+zig build dev
+```
+
+## 🛠️ Building
+
+### Build Options
 
 ```bash
-# Development mode with hot reloading
-zig build dev
+# Debug build (default)
+zig build
 
-# Run tests
-zig build test
+# Release build (optimized)
+zig build -Doptimize=ReleaseFast
 
-# Run benchmarks
-zig build bench
+# Release with safety checks
+zig build -Doptimize=ReleaseSafe
+
+# Minimal size build
+zig build -Doptimize=ReleaseSmall
 ```
 
-## 🎮 Game Systems
+### Platform-Specific Builds
 
-### Combat System
-```zig
-// Turn-based combat with abilities
-const CombatSystem = struct {
-    pub fn processTurn(world: *artemis.World, actor: Entity) !void {
-        // Complex combat logic
-    }
-};
+The build system automatically detects and configures for your platform:
+- **Windows** - DirectX/OpenGL rendering
+- **macOS** - Metal/OpenGL rendering  
+- **Linux** - Vulkan/OpenGL rendering
+
+## 🧪 Testing
+
+Run all tests:
+```bash
+zig build test-all
 ```
 
-### Character Progression
-```zig
-// Leveling and skill progression
-const ProgressionSystem = struct {
-    pub fn grantExperience(world: *artemis.World, entity: Entity, xp: u32) !void {
-        // XP and leveling logic
-    }
-};
+Run specific test suites:
+```bash
+zig build test          # Main tests
+zig build test-r6       # R6 character system tests
+zig build test-renderer # Renderer tests
 ```
 
-### Inventory Management
-```zig
-// Item and equipment management
-const InventorySystem = struct {
-    pub fn equipItem(world: *artemis.World, character: Entity, item: Entity) !void {
-        // Equipment system logic
-    }
-};
+Run benchmarks:
+```bash
+zig build benchmark
 ```
 
-## 🎨 UI Showcase
+## 📁 Project Structure
 
-### Main Menu
-- Animated title screen with particle effects
-- Responsive button layouts with Artemis GUI
-- Settings menu with live configuration updates
-
-### Game Interface
-- Real-time health/mana bars
-- Interactive inventory with drag & drop
-- Combat interface with ability selection
-- Minimap with real-time updates
-
-### Developer Tools
-- Runtime entity inspector
-- Performance profiler overlay
-- Plugin hot-reloading interface
-
-## 🔧 Architecture
-
-### Project Structure
 ```
 forsaken-game/
-├── src/
-│   ├── main.zig           # Game entry point
-│   ├── systems/           # Game systems
-│   ├── components/        # Game components
-│   ├── ui/                # UI components
-│   └── assets/            # Asset definitions
-├── assets/                # Game assets
-└── plugins/               # Game-specific plugins
+├── .github/           # GitHub Actions and templates
+├── assets/            # Game assets (models, textures, audio)
+├── docs/              # Documentation
+├── src/               # Source code
+│   ├── main.zig       # Entry point
+│   ├── r6_character.zig
+│   ├── r6_renderer.zig
+│   ├── combat_system.zig
+│   ├── ai/            # AI systems
+│   ├── ui/            # User interface
+│   └── tests/         # Test files
+├── build.zig          # Build configuration
+├── build.zig.zon      # Package dependencies
+└── README.md          # This file
 ```
 
-### Core Systems
-- **GameStateSystem** - Manages game states (menu, play, pause)
-- **InputSystem** - Handles player input and UI interaction
-- **RenderSystem** - Coordinates rendering with Artemis GUI
-- **AudioSystem** - Music and sound effect management
-- **SaveSystem** - Game state persistence
+## 🎯 Development Roadmap
 
-## 📊 Performance
+### Current Sprint (v0.1.0 - Core Prototype)
+- [x] Project setup and CI/CD
+- [ ] R6 character controller (#5)
+- [ ] Animation blending system (#6)
+- [ ] Basic melee combat (#8)
+- [ ] Terrain generation (#10)
 
-Forsaken demonstrates production-ready performance:
+### Upcoming Milestones
+- **v0.2.0** - Combat Update
+- **v0.3.0** - Progression System
+- **v0.4.0** - Polish Pass
+- **v0.5.0** - Platform Release
+- **v1.0.0** - Multiplayer Alpha
 
-| Metric | Target | Achieved |
-|--------|--------|---------|
-| **FPS** | 60+ | ✅ Stable 60+ |
-| **Entities** | 1000+ | ✅ 2000+ active |
-| **Memory** | <100MB | ✅ ~80MB |
-| **Load Time** | <5s | ✅ ~3s |
+See our [Issues](https://github.com/terminatable/forsaken-game/issues) for detailed task tracking.
 
-## 📚 Learning Resources
+## 🤝 Contributing
 
-### Code Examples
-- **Complex ECS Systems** - See `src/systems/` for advanced patterns
-- **UI Architecture** - Check `src/ui/` for reactive UI examples  
-- **Plugin Development** - Browse `plugins/` for plugin examples
-- **Performance Optimization** - Review optimization techniques
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### Best Practices
-- Entity composition patterns
-- System dependency management
-- UI state synchronization
-- Asset loading strategies
+### Good First Issues
+Check out issues labeled [`good first issue`](https://github.com/terminatable/forsaken-game/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) to get started.
 
-## 🎆 Roadmap
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
 
-### Current (v0.1) - Demo
-- ✅ Basic combat system
-- ✅ Character creation
-- ✅ Inventory management
-- ✅ Simple world exploration
+## 📊 Project Status
 
-### Next (v0.2) - Alpha
-- 🔄 Quest system
-- 🔄 NPC dialogue trees
-- 🔄 Crafting system
-- 🔄 Save/load functionality
+| Component | Status | Progress |
+|-----------|--------|----------|
+| Core Engine | 🟡 In Progress | 60% |
+| Character System | 🟡 In Progress | 40% |
+| Combat System | 🔴 Planning | 10% |
+| World Generation | 🔴 Planning | 5% |
+| UI System | 🔴 Planning | 0% |
+| Multiplayer | 🔴 Not Started | 0% |
 
-### Future (v1.0) - Beta
-- 📋 Multiplayer support
-- 📋 Advanced AI systems
-- 📋 Modding support
-- 📋 Full audio integration
+## 🎨 Art Style
 
-## 🔌 Plugins Used
+Forsaken features a stylized, low-poly aesthetic inspired by classic RPGs with modern lighting and effects. The R6 character style provides a good balance between performance and visual appeal.
 
-- **CoreGameplay** - Basic RPG mechanics
-- **CombatExtended** - Advanced combat features
-- **UIEnhancements** - Additional UI components
-- **DebugTools** - Development utilities
-- **PerformanceMonitor** - Runtime profiling
+## 🔧 Configuration
 
-## 📄 License
+### Graphics Settings
+Edit `config.json` (created on first run):
+```json
+{
+  "graphics": {
+    "resolution": [1920, 1080],
+    "fullscreen": false,
+    "vsync": true,
+    "antialiasing": 4,
+    "shadows": "medium",
+    "view_distance": 100
+  }
+}
+```
 
-MIT License - see [LICENSE](LICENSE) file for details.
+### Controls
+Default keyboard controls:
+- **WASD** - Movement
+- **Space** - Jump
+- **Shift** - Sprint
+- **LMB** - Light Attack
+- **RMB** - Heavy Attack
+- **Q** - Block
+- **E** - Interact
+- **Tab** - Inventory
+- **Esc** - Menu
 
-Free to use as reference for your own games!
+## 🐛 Known Issues
+
+- Animation blending not yet implemented (#6)
+- No macOS Metal renderer yet
+- Performance drops with 50+ characters on screen
+
+See [Issues](https://github.com/terminatable/forsaken-game/issues) for full list.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Artemis Engine Team** - For the powerful ECS framework
+- **Rouge Lineage** - For gameplay inspiration
+- **Zig Community** - For the amazing programming language
+- All contributors and testers
+
+## 📞 Contact & Support
+
+- **Issues**: [GitHub Issues](https://github.com/terminatable/forsaken-game/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/terminatable/forsaken-game/discussions)
+- **Organization**: [@terminatable](https://github.com/terminatable)
+
+## 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=terminatable/forsaken-game&type=Date)](https://star-history.com/#terminatable/forsaken-game&Date)
 
 ---
 
-**Forsaken RPG** - Showcase Game for Artemis Engine  
-*Part of the [Terminatable](https://github.com/terminatable) ecosystem*
-
-**Ready to explore?** `zig build run` and start your adventure! 🎆
+<p align="center">
+  Made with ❤️ by the Terminatable team
+</p>
