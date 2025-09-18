@@ -1,0 +1,28 @@
+.{
+    .name = .forsaken_game,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.15.1",
+    .dependencies = .{
+        .artemis_engine = .{
+            .url = "https://github.com/terminatable/artemis-engine/archive/main.tar.gz",
+            .hash = "1220000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        },
+        .artemis_gui = .{
+            .url = "https://github.com/terminatable/artemis-gui/archive/main.tar.gz",
+            .hash = "1220000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        },
+        .artemis_plugins = .{
+            .url = "https://github.com/terminatable/artemis-plugins/archive/main.tar.gz",
+            .hash = "1220000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "assets",
+        "plugins",
+        "README.md",
+        "LICENSE",
+    },
+}
