@@ -1,0 +1,144 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  ZIG_VERSION: 0.11.0
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build-mode: [Debug, ReleaseSafe, ReleaseFast]
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: ${{ env.ZIG_VERSION }}
+
+    - name: Cache Zig Build
+      uses: actions/cache@v3
+      with:
+        path: |
+          zig-cache
+          ~/.cache/zig
+        key: ${{ runner.os }}-zig-${{ hashFiles('build.zig.zon') }}
+        restore-keys: |
+          ${{ runner.os }}-zig-
+
+    - name: Build Project
+      run: |
+        zig build -Doptimize=${{ matrix.build-mode }}
+
+    - name: Run Tests
+      run: |
+        zig build test
+        zig build test-r6
+        zig build test-renderer
+
+    - name: Run Benchmarks
+      if: matrix.build-mode == 'ReleaseFast'
+      run: |
+        zig build benchmark
+      continue-on-error: true
+
+    - name: Upload Artifacts
+      if: matrix.build-mode == 'ReleaseFast'
+      uses: actions/upload-artifact@v3
+      with:
+        name: forsaken-${{ matrix.os }}-${{ matrix.build-mode }}
+        path: |
+          zig-out/bin/
+          !zig-out/bin/*.pdb
+        retention-days: 7
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: ${{ env.ZIG_VERSION }}
+
+    - name: Format Check
+      run: |
+        zig fmt --check src/
+        zig fmt --check build.zig
+
+    - name: Documentation Check
+      run: |
+        zig build docs 2>/dev/null || echo "Documentation generation not configured yet"
+      continue-on-error: true
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Run Trivy Security Scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Security Results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  release:
+    name: Create Release
+    needs: [build-and-test, code-quality]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Create Release Notes
+      id: release_notes
+      run: |
+        echo "# Release ${{ github.ref_name }}" > release_notes.md
+        echo "" >> release_notes.md
+        echo "## Changes" >> release_notes.md
+        git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> release_notes.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          forsaken-*/
+        body_path: release_notes.md
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
