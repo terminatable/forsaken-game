@@ -1,0 +1,170 @@
+name: Release Management
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v0.1.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get Version
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        # Generate changelog from commits
+        echo "# Release ${{ steps.get_version.outputs.version }}" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## What's Changed" >> CHANGELOG.md
+        
+        # Get commit messages since last tag
+        if git describe --tags --abbrev=0 HEAD^ 2>/dev/null; then
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^)
+          git log --pretty=format:"* %s (%an)" $LAST_TAG..HEAD >> CHANGELOG.md
+        else
+          git log --pretty=format:"* %s (%an)" >> CHANGELOG.md
+        fi
+        
+        echo "" >> CHANGELOG.md
+        echo "## Contributors" >> CHANGELOG.md
+        git log --format='* %an' | sort -u | grep -v 'github-actions' >> CHANGELOG.md
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        release_name: Forsaken ${{ steps.get_version.outputs.version }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.version, 'alpha') || contains(steps.get_version.outputs.version, 'beta') }}
+
+  build-releases:
+    name: Build Release Binaries
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            archive: tar.gz
+          - os: windows-latest
+            platform: windows
+            archive: zip
+          - os: macos-latest
+            platform: macos
+            archive: tar.gz
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.11.0
+
+    - name: Build Release Binary
+      run: |
+        zig build -Doptimize=ReleaseFast
+        
+    - name: Package Release (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        mkdir -p forsaken-${{ matrix.platform }}
+        cp -r zig-out/bin/* forsaken-${{ matrix.platform }}/
+        cp README.md LICENSE CONTRIBUTING.md forsaken-${{ matrix.platform }}/
+        tar czf forsaken-${{ matrix.platform }}-${{ needs.create-release.outputs.version }}.tar.gz forsaken-${{ matrix.platform }}
+
+    - name: Package Release (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        mkdir forsaken-${{ matrix.platform }}
+        xcopy zig-out\bin\* forsaken-${{ matrix.platform }}\ /E
+        copy README.md forsaken-${{ matrix.platform }}\
+        copy LICENSE forsaken-${{ matrix.platform }}\
+        copy CONTRIBUTING.md forsaken-${{ matrix.platform }}\
+        7z a forsaken-${{ matrix.platform }}-${{ needs.create-release.outputs.version }}.zip forsaken-${{ matrix.platform }}
+
+    - name: Upload Release Asset (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./forsaken-${{ matrix.platform }}-${{ needs.create-release.outputs.version }}.tar.gz
+        asset_name: forsaken-${{ matrix.platform }}-${{ needs.create-release.outputs.version }}.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload Release Asset (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./forsaken-${{ matrix.platform }}-${{ needs.create-release.outputs.version }}.zip
+        asset_name: forsaken-${{ matrix.platform }}-${{ needs.create-release.outputs.version }}.zip
+        asset_content_type: application/zip
+
+  update-changelog:
+    name: Update Changelog
+    needs: build-releases
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update CHANGELOG.md
+      run: |
+        # Create or update CHANGELOG.md in repository
+        echo "# Changelog" > CHANGELOG_NEW.md
+        echo "" >> CHANGELOG_NEW.md
+        echo "## [${{ needs.create-release.outputs.version }}] - $(date +%Y-%m-%d)" >> CHANGELOG_NEW.md
+        echo "" >> CHANGELOG_NEW.md
+        
+        # Add existing changelog if it exists
+        if [ -f CHANGELOG.md ]; then
+          tail -n +3 CHANGELOG.md >> CHANGELOG_NEW.md
+        fi
+        
+        mv CHANGELOG_NEW.md CHANGELOG.md
+        
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add CHANGELOG.md
+        git commit -m "docs: update changelog for ${{ needs.create-release.outputs.version }}"
+        git push
