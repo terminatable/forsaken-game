@@ -6,8 +6,6 @@
 
 **Complete RPG showcase game demonstrating the full Artemis Engine ecosystem.**
 
-> **🎮 Rouge Lineage Inspired**: A deep RPG experience showcasing advanced ECS patterns, reactive UI, and plugin systems.
-
 ## ✨ What is Forsaken?
 
 Forsaken is a complete RPG built with the Artemis Engine ecosystem to demonstrate production-ready game development in Zig. It showcases:
